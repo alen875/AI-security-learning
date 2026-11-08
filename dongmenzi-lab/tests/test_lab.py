@@ -67,6 +67,21 @@ class LabTests(unittest.TestCase):
             with c.get("/") as response:
                 self.assertIn(b"app.js", response.data)
 
+    def test_portal_placeholder_routes_and_page(self):
+        c = self.client()
+        with c.get("/") as response:
+            page = response.get_data(as_text=True)
+        self.assertIn('data-feature="contact"', page)
+        self.assertIn('id="register-form"', page)
+        self.assertIn('id="bp-inspect"', page)
+        self.assertIn('id="search"', page)
+        self.assertNotIn("<h1>靶场", page)
+        for feature in ("solutions", "products", "support", "contact", "news", "downloads"):
+            response = c.get(f"/api/portal/{feature}")
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.json["data"]["status"], "coming_soon")
+        self.assertEqual(c.get("/api/portal/unknown").status_code, 404)
+
     def test_auth_and_logout_revocation(self):
         c = self.client()
         self.assertEqual(c.get("/api/devices").status_code, 401)
@@ -76,6 +91,24 @@ class LabTests(unittest.TestCase):
         self.assertEqual(c.post("/api/auth/logout").status_code, 403)
         self.assertEqual(c.post("/api/auth/logout", headers={"X-CSRF-Token": csrf}).status_code, 200)
         self.assertEqual(c.get("/api/auth/me").status_code, 401)
+
+    def test_register_creates_only_ordinary_account(self):
+        c = self.client()
+        response = c.post("/api/auth/register", json={"username": "student_01", "password": "classroom-only-123"})
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json["data"]["role"], "maint")
+        self.assertEqual(c.post("/api/auth/login", json={"username": "student_01", "password": "classroom-only-123"}).status_code, 200)
+        self.assertEqual(c.get("/api/auth/me").json["data"]["role"], "maint")
+        self.assertEqual(c.get("/api/audit").status_code, 403)
+        self.assertEqual(c.get("/api/records/2").status_code, 403)
+
+    def test_register_rejects_role_input_duplicate_and_bad_password(self):
+        c = self.client()
+        self.assertEqual(c.post("/api/auth/register", json={"username": "newuser", "password": "classroom-only-123", "role": "admin"}).status_code, 400)
+        self.assertEqual(c.post("/api/auth/register", json={"username": "newuser", "password": "short"}).status_code, 400)
+        self.assertEqual(c.post("/api/auth/register", json={"username": "maint_a", "password": "classroom-only-123"}).status_code, 409)
+        with closing(self.db()) as conn:
+            self.assertEqual(conn.execute("SELECT COUNT(*) FROM users").fetchone()[0], 4)
 
     def test_login_rate_limit(self):
         c = self.client()

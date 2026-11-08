@@ -1,5 +1,46 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>东门子虚构设备维护训练靶场</title><link rel="stylesheet" href="/static/style.css"></head>
-<body><header><h1>东门子设备维护训练靶场</h1><p>虚构教学数据 · 不连接工业设备</p><div id="mode"></div></header>
-<main><section id="login-panel"><h2>登录</h2><form id="login-form"><label>账号<input name="username" autocomplete="username" required></label><label>密码<input name="password" type="password" autocomplete="current-password" required></label><button>登录</button></form></section>
-<section id="workspace" hidden><p id="identity"></p><button id="logout">退出</button><h2>模拟设备</h2><button id="refresh">刷新设备</button><div id="devices" aria-live="polite"></div><h2>维护记录详情</h2><label>预置记录编号<input id="record-id" type="number" min="1" value="1"></label><button id="load-record">读取记录</button><pre id="record"></pre><section id="bp-panel" hidden><h2>T3 BP 请求参数篡改</h2><p>页面只发送普通维护预览。可在获批的隔离环境用 Burp Suite 拦截请求，将客户端提交的预览角色改为复核员，比较教学状态与修复状态。本练习只读取虚构培训摘要。</p><button id="bp-inspect">预览普通维护报告</button><pre id="bp-result"></pre></section><h2>教学检索</h2><label>索引编号<input id="query" value="1" maxlength="80"></label><button id="search">检索</button><div id="results" aria-live="polite"></div><section id="audit-panel" hidden><h2>审计</h2><button id="load-audit">查看最近事件</button><pre id="audit"></pre></section><section id="admin-panel" hidden><h2>恢复基线</h2><button id="reset">重置虚构业务数据</button></section></section><p id="notice" role="status"></p></main><script src="/static/app.js" defer></script></body></html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>东门子 · 工业设备维护平台</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="utility"><div class="container utility-inner"><span>虚构工业场景 · 本地教学系统</span><span>设备维护与数字化服务</span></div></div>
+  <header class="site-header"><div class="container header-inner">
+    <a class="brand" href="/" aria-label="东门子首页"><span class="brand-mark" aria-hidden="true">D</span><span>东门子<small>DONGMENZI</small></span></a>
+    <nav aria-label="主导航" class="nav"><button type="button" data-feature="solutions">解决方案</button><button type="button" data-feature="products">产品与服务</button><button type="button" data-feature="support">技术支持</button><button type="button" data-feature="contact">联系我们</button></nav>
+    <a class="header-action" href="#login-panel">进入平台 <span aria-hidden="true">↗</span></a>
+  </div></header>
+  <main>
+    <section class="hero" aria-labelledby="hero-title"><div class="container hero-grid">
+      <div class="hero-copy"><p class="eyebrow">INDUSTRIAL SERVICE PLATFORM</p><h1 id="hero-title">让设备维护<br><em>更清晰、更高效</em></h1><p class="hero-description">面向虚构工业设备的维护管理与培训体验。统一查看设备、维护记录和教学报告。</p><a class="primary-link" href="#login-panel">开始使用 <span aria-hidden="true">→</span></a></div>
+      <div class="hero-visual" aria-hidden="true"><div class="visual-grid"></div><div class="visual-ring ring-one"></div><div class="visual-ring ring-two"></div><div class="machine machine-one"></div><div class="machine machine-two"></div><div class="machine machine-three"></div><div class="visual-caption"><span class="live-dot"></span> DIGITAL OPERATIONS <strong>01 / 03</strong></div></div>
+    </div></section>
+    <div class="container content-layout">
+      <div class="section-heading"><div><p class="eyebrow dark">工作空间</p><h2>设备服务中心</h2></div><div id="mode" class="mode-badge" aria-live="polite">正在读取状态…</div></div>
+      <section class="quick-links" aria-label="平台入口">
+        <button class="quick-card" type="button" data-feature="products"><span class="quick-icon">▣</span><strong>产品与服务</strong><span>了解设备服务能力</span><b aria-hidden="true">↗</b></button>
+        <button class="quick-card" type="button" data-feature="downloads"><span class="quick-icon">↓</span><strong>资料下载</strong><span>获取技术资料</span><b aria-hidden="true">↗</b></button>
+        <button class="quick-card" type="button" data-feature="news"><span class="quick-icon">◎</span><strong>最新动态</strong><span>查看项目资讯</span><b aria-hidden="true">↗</b></button>
+        <button class="quick-card" type="button" data-feature="contact"><span class="quick-icon">✉</span><strong>联系我们</strong><span>联系课程项目组</span><b aria-hidden="true">↗</b></button>
+      </section>
+      <div class="app-grid">
+        <section id="login-panel" class="panel access-panel" aria-labelledby="login-title"><div class="panel-kicker">ACCOUNT ACCESS</div><h2 id="login-title">登录工作空间</h2><p class="muted">演示账号的随机密码保存在本机 <code>data/credentials.txt</code>。</p><form id="login-form" class="form-stack"><label>账号<input name="username" autocomplete="username" required placeholder="请输入账号"></label><label>密码<input name="password" type="password" autocomplete="current-password" required placeholder="请输入密码"></label><button class="primary-button">登录平台 <span aria-hidden="true">→</span></button></form><details class="register"><summary>还没有账号？注册普通维护员</summary><form id="register-form" class="form-stack"><label>账号<input name="username" autocomplete="username" pattern="[A-Za-z][A-Za-z0-9_]{2,31}" minlength="3" maxlength="32" required placeholder="3–32 位，以字母开头"></label><label>密码<input name="password" type="password" autocomplete="new-password" minlength="10" maxlength="128" required placeholder="至少 10 位"></label><button class="secondary-button">创建账号</button></form><p class="muted">新账号固定为普通维护员，注册后请登录。</p></details></section>
+        <section id="workspace" class="panel workspace-panel" hidden><div class="workspace-heading"><div><div class="panel-kicker">MY WORKSPACE</div><h2>维护控制台</h2><p id="identity" class="muted"></p></div><button id="logout" class="text-button">退出登录</button></div>
+          <div class="module"><div class="module-heading"><h3>我的设备</h3><button id="refresh" class="small-button">刷新设备</button></div><div id="devices" class="device-list" aria-live="polite"></div></div>
+          <div class="module"><h3>维护记录详情</h3><div class="inline-form"><label>预置记录编号<input id="record-id" type="number" min="1" value="1"></label><button id="load-record" class="small-button">读取记录</button></div><pre id="record"></pre></div>
+          <section id="bp-panel" class="module" hidden><div class="module-heading"><h3>报告预览</h3><span class="module-tag">教学项目 T3</span></div><p class="muted">页面发送普通维护预览请求；课程中可用 Burp Suite 比较请求参数与服务端权限判断。</p><button id="bp-inspect" class="small-button">预览普通维护报告</button><pre id="bp-result"></pre></section>
+          <div class="module"><div class="module-heading"><h3>教学索引检索</h3><span class="module-tag">教学项目 T2</span></div><div class="inline-form"><label>索引编号<input id="query" value="1" maxlength="80"></label><button id="search" class="small-button">检索</button></div><div id="results" aria-live="polite"></div></div>
+          <section id="audit-panel" class="module" hidden><h3>操作审计</h3><button id="load-audit" class="small-button">查看最近事件</button><pre id="audit"></pre></section>
+          <section id="admin-panel" class="module" hidden><h3>基线管理</h3><button id="reset" class="small-button">重置虚构业务数据</button></section>
+        </section>
+      </div><p id="notice" role="status" aria-live="polite"></p>
+    </div>
+  </main>
+  <footer><div class="container footer-grid"><div><strong>东门子</strong><p>虚构工业设备维护教学项目</p></div><div><h3>探索</h3><button type="button" data-feature="solutions">解决方案</button><button type="button" data-feature="support">技术支持</button></div><div><h3>联系</h3><button type="button" data-feature="contact">联系我们</button><p>课程项目组 · 功能建设中</p></div></div><div class="container footer-bottom">© 东门子虚构教学项目 · 不代表西门子或任何真实厂商</div></footer>
+  <dialog id="feature-dialog" aria-labelledby="feature-title"><div class="dialog-top"><span class="panel-kicker">DONGMENZI SERVICE</span><button id="close-dialog" type="button" aria-label="关闭">×</button></div><h2 id="feature-title"></h2><p id="feature-message"></p><button id="dialog-confirm" class="primary-button" type="button">我知道了</button></dialog>
+  <script src="/static/app.js" defer></script>
+</body>
+</html>

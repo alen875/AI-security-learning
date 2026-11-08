@@ -15,7 +15,7 @@
 | `sqli` | `GET /api/training-search?q=` | 在独立教学索引库中演示 SQL 拼接 | 索引全为虚构、对学员公开的数据；数据库只读；不接主业务记录表 |
 | `bp` | `POST /api/training/report-preview` | 错误信任客户端提交的 `preview_role` | 只读虚构报告；可用 Burp Suite 拦截并重放；不改变业务数据 |
 
-四种模式互斥，切换必须停止进程并重启。T1 对象授权参考 [CVE-2026-35183 公告](https://github.com/Ajax30/BraveCMS-2.0/security/advisories/GHSA-cpf3-fxwg-cwr3)的缺陷类别，但本项目使用自建维护记录读取场景。T2 是 SQL 注入原理模拟；此前材料中出现的 `CNVD-2026-40239` 尚待核实，不能将它写成本项目已复现的编号。T3 是新增的客户端角色参数篡改教学问题，不指称某个真实 CVE。`CNVD-2026-34826` 仅供密码保护案例分析，没有纳入运行模式。
+四种模式互斥，切换必须停止进程并重启。T1 是自建维护记录的只读对象授权练习；T2 是独立虚构索引上的 SQL 注入原理模拟。T3 用 BP 修改客户端字段来观察授权差异，可参照工控软件 FUXA 的 [CVE-2026-43946 官方公告](https://github.com/frangoteam/FUXA/security/advisories/GHSA-fwcm-rqvw-j3p7)理解请求字段与授权校验的关系；原漏洞涉及 `/api/getTagValue` 和 `sourceScriptName`，本项目使用不同接口与字段，不宣称复现 FUXA 或验证其补丁。
 
 ## 使用范围
 
@@ -32,7 +32,7 @@ Flask 登录/角色/对象授权/审计/重置
           └── data/training.db   仅有虚构教学索引；检索时以只读方式打开
 ```
 
-前端包含登录、设备列表、设备记录、指定记录详情、教学检索、审计和管理员重置，提供加载、空结果、失败与会话过期提示。页面显示模式和构建号；显示数据库文字时使用 `textContent`，不把内容作为 HTML 执行。
+前端采用工业服务门户风格，展示虚构品牌“东门子”的设备服务中心。页面包含登录、普通维护员注册、设备列表、设备记录、指定记录详情、教学检索、报告预览、审计和管理员重置，提供加载、空结果、失败与会话过期提示。页面显示模式和构建号；显示数据库文字时使用 `textContent`，不把内容作为 HTML 执行。导航、卡片和页脚的“解决方案”“产品与服务”“技术支持”“联系我们”“最新动态”“资料下载”点击后从 `/api/portal/<feature>` 获取“该功能正在开发中”提示；没有虚构真实联系方式或外链。
 
 ## 仓库结构
 
@@ -48,7 +48,7 @@ Flask 登录/角色/对象授权/审计/重置
 | `docs/test-matrix.md` | 完整检查矩阵及手工验证条件 |
 | `docs/verification.md` | 本次实际核验结果与未完成的现场检查 |
 | `docs/burp-exercise.md` | T3 的 Burp Suite 课堂练习、预期与复测记录格式 |
-| `docs/实验指导手册.md` | 51 个测试点逐项操作步骤和证据要求 |
+| `docs/实验指导手册.md` | 55 个测试点逐项操作步骤和证据要求 |
 
 运行时生成的 `data/`、`evidence/`、`.env`、虚拟环境和数据库由 `.gitignore` 排除。不要把用户自己的课堂日志、截图、凭据或数据库提交到 GitHub。
 
@@ -101,6 +101,8 @@ Invoke-RestMethod http://127.0.0.1:5000/healthz
 
 初始化会生成 `data/range.db`、`data/training.db` 和 `data/credentials.txt`。演示账号为 `maint_a`、`maint_b`、`admin`、`reviewer`，密码在首次初始化时随机生成，只保存在本机 `credentials.txt`。**该文件不可提交或截图公开。**运行地址默认为 `http://127.0.0.1:5000`。停止服务使用 `Ctrl+C`。
 
+登录页提供“注册普通维护员账号”。账号需 3–32 位并以英文字母开头，密码至少 10 位。服务端固定分配 `maint` 角色，不能自行注册管理员或复核员。新账号没有预置设备或记录，可用于登录、普通教学检索和 T3 普通报告；验证 T1 的本人/他人记录请继续使用预置的 `maint_a`、`maint_b`。业务重置不会删除注册账号。
+
 再次启动不必重新建库。若已存在数据库，`init_db.py` 会拒绝覆盖，避免误删证据或账号。恢复业务种子用下文的重置命令。
 
 ## Kali 与 Windows 靶机双机测试
@@ -140,6 +142,8 @@ curl --fail --silent --show-error http://<Windows靶机私有IP>:5000/healthz
 |---|---|---|
 | GET | `/api/lab/status`、`/healthz` | 状态、版本和存活检查 |
 | POST | `/api/auth/login`、`/api/auth/logout` | 登录与注销 |
+| POST | `/api/auth/register` | 注册普通维护员账号；角色由服务端固定 |
+| GET | `/api/portal/<feature>` | 门户占位功能；仅允许六个预置入口，返回开发中状态 |
 | GET | `/api/auth/me` | 当前身份和本会话的请求校验令牌 |
 | GET | `/api/devices`、`/api/devices/{id}`、`/api/devices/{id}/records` | 授权范围内的设备和记录列表 |
 | GET | `/api/records/{id}` | T1 只读详情训练点 |

@@ -3,7 +3,7 @@ import argparse
 import ipaddress
 import os
 from pathlib import Path
-from lab import BASE, create_app
+from lab import BASE, BUILD_ID, create_app
 
 
 def main():
@@ -23,7 +23,7 @@ def main():
         raise SystemExit("Private VM binding requires LAB_PRIVATE_NETWORK_APPROVED=yes")
     data_dir = args.data_dir.resolve()
     app = create_app({"LAB_MODE": args.mode, "DB_PATH": str(data_dir / "range.db"), "SEARCH_DB_PATH": str(data_dir / "training.db")})
-    print(f"mode={args.mode} build=B01-2026.11.06-v3 host={args.host} port={args.port}")
+    print(f"mode={args.mode} build={BUILD_ID} host={args.host} port={args.port}")
     app.run(host=args.host, port=args.port, debug=False, use_reloader=False)
 
 

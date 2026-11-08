@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import secrets
 import sqlite3
 import time
@@ -16,8 +17,12 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 BASE = Path(__file__).resolve().parent
 MODES = {"safe", "idor", "sqli", "bp"}
-BUILD_ID = "B01-2026.11.06-v3"
+BUILD_ID = "B01-2026.11.07-v5"
 SEED_VERSION = "2"
+PORTAL_FEATURES = {
+    "solutions": "解决方案", "products": "产品与服务", "support": "技术支持",
+    "contact": "联系我们", "news": "最新动态", "downloads": "资料下载",
+}
 DEVICE_SEED = [
     (101, "SIM-E01", "模拟空压机", "运行", 1),
     (102, "SIM-E02", "模拟水泵", "维护中", 2),
@@ -147,6 +152,7 @@ def create_app(config: dict | None = None) -> Flask:
     if not main_path.is_file() or not search_path.is_file():
         raise RuntimeError("Initialize both databases before starting the server")
     failed_logins: dict[str, list[float]] = {}
+    recent_registrations: dict[str, list[float]] = {}
 
     def db() -> sqlite3.Connection:
         if "db" not in g:
@@ -210,6 +216,14 @@ def create_app(config: dict | None = None) -> Flask:
     def health():
         return jsonify(ok=True, mode=mode)
 
+    @app.get("/api/portal/<feature>")
+    def portal_feature(feature):
+        title = PORTAL_FEATURES.get(feature)
+        if title is None:
+            return jsonify(error="not_found", request_id=g.request_id), 404
+        return jsonify(data={"feature": feature, "title": title, "status": "coming_soon",
+                             "message": "该功能正在开发中"})
+
     @app.post("/api/auth/login")
     def login():
         body = request.get_json(silent=True) or {}
@@ -235,6 +249,32 @@ def create_app(config: dict | None = None) -> Flask:
         session["csrf"] = secrets.token_urlsafe(24)
         audit("login", name, "ok", row["id"])
         return jsonify(data={"ok": True})
+
+    @app.post("/api/auth/register")
+    def register():
+        body = request.get_json(silent=True)
+        if not isinstance(body, dict) or set(body) != {"username", "password"}:
+            return jsonify(error="只需填写账号和密码", request_id=g.request_id), 400
+        name, password = body["username"], body["password"]
+        if not isinstance(name, str) or not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{2,31}", name):
+            return jsonify(error="账号须为3到32位英文字母、数字或下划线，且以字母开头", request_id=g.request_id), 400
+        if not isinstance(password, str) or not 10 <= len(password) <= 128:
+            return jsonify(error="密码长度须为10到128位", request_id=g.request_id), 400
+        client = request.remote_addr or "local"
+        recent = [t for t in recent_registrations.get(client, []) if time.time() - t < 3600]
+        recent_registrations[client] = recent
+        if len(recent) >= 5:
+            return jsonify(error="注册次数过多，请稍后再试", request_id=g.request_id), 429
+        try:
+            db().execute("INSERT INTO users(username,password_hash,role) VALUES (?,?,?)",
+                         (name, generate_password_hash(password), "maint"))
+            db().commit()
+        except sqlite3.IntegrityError:
+            db().rollback()
+            return jsonify(error="账号已存在", request_id=g.request_id), 409
+        recent.append(time.time())
+        audit("register", name, "ok")
+        return jsonify(data={"ok": True, "username": name, "role": "maint"}), 201
 
     @app.get("/api/auth/me")
     @require()
