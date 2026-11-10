@@ -1,7 +1,7 @@
 """Create a source-only archive. Runtime data and evidence are excluded."""
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
-from lab import BASE
+from lab import BASE, BUILD_ID
 
 FILES = [
     ".gitignore", "README.md", "requirements.txt", "lab.py", "init_db.py", "check_data.py",
@@ -13,13 +13,13 @@ FILES = [
 
 
 def main():
-    output = BASE.parent / "dongmenzi-lab-v3-source.zip"
+    output = BASE.parent / f"dongmenzi-lab-{BUILD_ID}-source.zip"
     with ZipFile(output, "w", ZIP_DEFLATED) as archive:
         for name in FILES:
             path = BASE / name
             if not path.is_file():
                 raise SystemExit(f"Missing release file: {name}")
-            archive.write(path, f"dongmenzi-lab-v3/{name}")
+            archive.write(path, f"dongmenzi-lab/{name}")
     with ZipFile(output) as archive:
         if archive.testzip() is not None:
             raise SystemExit("Archive integrity check failed")

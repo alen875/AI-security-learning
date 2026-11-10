@@ -17,7 +17,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 BASE = Path(__file__).resolve().parent
 MODES = {"safe", "idor", "sqli", "bp"}
-BUILD_ID = "B01-2026.11.07-v5"
+BUILD_ID = "B01-2026.11.10-v6"
 SEED_VERSION = "2"
 PORTAL_FEATURES = {
     "solutions": "解决方案", "products": "产品与服务", "support": "技术支持",
