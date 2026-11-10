@@ -1,0 +1,14 @@
+.git
+.gitignore
+.venv
+.test_tmp
+__pycache__
+*.pyc
+data
+evidence
+*.db
+*.db-*
+*.log
+.env
+*.zip
+*.rar

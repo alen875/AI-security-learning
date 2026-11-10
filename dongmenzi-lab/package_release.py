@@ -4,7 +4,8 @@ from zipfile import ZipFile, ZIP_DEFLATED
 from lab import BASE, BUILD_ID
 
 FILES = [
-    ".gitignore", "README.md", "requirements.txt", "lab.py", "init_db.py", "check_data.py",
+    ".gitignore", ".dockerignore", "Dockerfile", "compose.yaml", "container_entry.py",
+    "README.md", "requirements.txt", "lab.py", "init_db.py", "check_data.py",
     "run_range.py", "reset_sandbox.py", "package_release.py",
     "static/index.html", "static/app.js", "static/style.css",
     "scripts/start_safe.ps1", "scripts/run_tests.ps1",

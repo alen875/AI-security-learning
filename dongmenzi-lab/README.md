@@ -4,7 +4,7 @@
 
 一个使用**虚构工业设备与维护记录**的本地 Web 安全训练项目。学员可在相同业务数据上比较对象级授权、SQL 查询和报告预览授权的教学状态与修复状态，并记录验证与复测证据。项目不会连接 PLC、SCADA、真实设备或工业协议。
 
-> 项目状态：`B01-2026.11.10-v6` 已通过本机自动化测试及 Edge 桌面、390 像素宽度的主要页面流程检查；Windows 虚拟机与 Kali 双机联通、Burp Suite 图形界面操作和教师许可仍须在实际教学环境核验。公开漏洞编号只作原理分析，本项目不宣称复现原产品或安装厂商补丁。
+> 项目状态：`B01-2026.11.10-v7` 已通过本机自动化测试及 Edge 桌面、390 像素宽度的主要页面流程检查；Docker 配置已加入源码，但当前机器未安装 Docker，镜像构建与容器运行尚未实测。Windows 虚拟机与 Kali 双机联通、Burp Suite 图形界面操作和教师许可仍须在实际教学环境核验。公开漏洞编号只作原理分析，本项目不宣称复现原产品或安装厂商补丁。
 
 ## 训练点
 
@@ -45,6 +45,7 @@ Flask 登录/角色/对象授权/审计/重置
 | `static/` | 动态前端页面、脚本与样式 |
 | `tests/test_lab.py` | 自动化功能与边界测试 |
 | `scripts/` | Windows PowerShell 启动与测试入口 |
+| `Dockerfile`、`compose.yaml`、`container_entry.py` | 可选的 Docker 镜像、编排及首次初始化入口 |
 | `docs/test-matrix.md` | 完整检查矩阵及手工验证条件 |
 | `docs/verification.md` | 本次实际核验结果与未完成的现场检查 |
 | `docs/burp-exercise.md` | T3 的 Burp Suite 课堂练习、预期与复测记录格式 |
@@ -104,6 +105,38 @@ Invoke-RestMethod http://127.0.0.1:5000/healthz
 登录页提供“注册普通维护员账号”。账号需 3–32 位并以英文字母开头，密码至少 10 位。服务端固定分配 `maint` 角色，不能自行注册管理员或复核员。新账号没有预置设备或记录，可用于登录、普通教学检索和 T3 普通报告；验证 T1 的本人/他人记录请继续使用预置的 `maint_a`、`maint_b`。业务重置不会删除注册账号。
 
 再次启动不必重新建库。若已存在数据库，`init_db.py` 会拒绝覆盖，避免误删证据或账号。恢复业务种子用下文的重置命令。
+
+## 可选：Docker Desktop 运行
+
+这种方式需要 Windows 10/11 上已能运行 Linux 容器的 Docker Desktop；Windows 虚拟机内使用时还需支持嵌套虚拟化。当前交付的是**镜像构建源码**，不含离线镜像或 Docker Desktop 安装包。进入 `dongmenzi-lab` 目录后运行：
+
+```powershell
+docker compose up -d --build
+docker compose ps
+Invoke-RestMethod http://127.0.0.1:5000/healthz
+docker compose exec lab cat /data/credentials.txt
+```
+
+打开 `http://127.0.0.1:5000/`。首次启动自动建立虚构数据和随机演示密码；密码只留在 Docker 命名卷中，查看时不要截图或提交。再次启动沿用原账号和数据。默认 `safe`，宿主端口只绑定 `127.0.0.1`。以 PowerShell 切换一个训练模式：
+
+```powershell
+$env:LAB_MODE = 'idor'   # 另两种教学模式为 sqli、bp
+docker compose up -d --force-recreate
+Invoke-RestMethod http://127.0.0.1:5000/healthz
+```
+
+每次切换后重新登录，并核对网页及健康检查中的模式。实验结束时恢复 `safe`，停止容器；`down` 不删除命名卷：
+
+```powershell
+$env:LAB_MODE = 'safe'
+docker compose up -d --force-recreate
+docker compose down
+Remove-Item Env:\LAB_MODE
+```
+
+容器环境的业务基线检查与重置分别使用 `docker compose exec lab python check_data.py --data-dir /data` 和 `docker compose exec lab python reset_sandbox.py --data-dir /data --confirm RESET`；先确认容器正在运行。**不要运行 `docker compose down -v`**，它会删除保存账号、凭据和课堂记录的卷。
+
+如果 Kali 必须访问，先按上文的隔离网络要求确认获批私网和防火墙，再在当前 PowerShell 窗口将 `$env:LAB_PUBLISH_IP` 设为 Windows 靶机的具体私有 IP，并重新创建容器。默认的回环绑定不允许 Kali 连接。不得设为 `0.0.0.0` 或公网地址。Docker 版尚未在本机或 Windows/Kali 双机环境实际运行，因此上述命令是待现场验证的部署路径。
 
 ## Kali 与 Windows 靶机双机测试
 

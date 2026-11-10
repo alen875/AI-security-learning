@@ -1,0 +1,15 @@
+services:
+  lab:
+    build: .
+    image: dongmenzi-lab:local
+    environment:
+      LAB_MODE: ${LAB_MODE:-safe}
+      LAB_PRIVATE_NETWORK_APPROVED: "yes"
+    ports:
+      - "${LAB_PUBLISH_IP:-127.0.0.1}:5000:5000"
+    volumes:
+      - lab_data:/data
+    restart: "no"
+
+volumes:
+  lab_data:
